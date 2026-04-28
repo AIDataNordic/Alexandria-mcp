@@ -1,0 +1,23 @@
+configSchema:
+  type: object
+  description: Optional configuration for the Alexandria MCP server
+  properties:
+    default_language:
+      type: string
+      description: Default language filter for searches (eng, ger, lat, fre, ita, gre, rus). Leave empty for all languages.
+      default: ""
+      enum: ["", "eng", "ger", "lat", "fre", "ita", "gre", "rus"]
+    default_limit:
+      type: integer
+      description: Default number of search results to return (1-20)
+      default: 5
+      minimum: 1
+      maximum: 20
+  required: []
+  additionalProperties: false
+
+homepage: https://aidatanorge.no
+
+startCommand:
+  type: http
+  url: https://alexandria.aidatanorge.no/mcp
