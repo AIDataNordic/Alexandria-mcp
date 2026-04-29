@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alexandria — Classical Philosophy Search</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #f4e9d0;
+      background-image:
+        radial-gradient(ellipse at top, #ede0c0 0%, #f4e9d0 60%);
+      color: #2a1a0e;
+      font-family: 'EB Garamond', Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      min-height: 100vh;
+    }
+
+    /* Decorative top border */
+    .border-top {
+      height: 6px;
+      background: linear-gradient(90deg, transparent, #8b6820, #c9a84c, #8b6820, transparent);
+    }
+
+    header {
+      text-align: center;
+      padding: 3.5rem 1.5rem 2rem;
+      border-bottom: 1px solid #c2a96b44;
+    }
+
+    .ornament {
+      font-size: 1.4rem;
+      color: #8b6820;
+      letter-spacing: 0.4em;
+      display: block;
+      margin-bottom: 0.8rem;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(2.8rem, 7vw, 4.8rem);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #1a0e06;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-size: 1.15rem;
+      color: #6b4c2a;
+      margin-top: 0.8rem;
+      letter-spacing: 0.02em;
+    }
+
+    .divider {
+      text-align: center;
+      color: #8b6820;
+      font-size: 1.3rem;
+      letter-spacing: 0.5em;
+      margin: 2rem 0;
+      opacity: 0.7;
+    }
+
+    main {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #3a1f08;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #c2a96b66;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: #2a1a0e;
+    }
+
+    /* Connect box */
+    .connect-box {
+      background: #ede0c0;
+      border: 1px solid #c2a96b;
+      border-radius: 3px;
+      padding: 1.4rem 1.6rem;
+      margin-top: 1rem;
+    }
+
+    .connect-box p {
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+      color: #4a3010;
+    }
+
+    .code-line {
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      background: #2a1a0e;
+      color: #f0dfa0;
+      padding: 0.7rem 1rem;
+      border-radius: 2px;
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    /* Philosophers grid */
+    .names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.2rem;
+      margin-top: 0.8rem;
+    }
+
+    .names span {
+      font-style: italic;
+      color: #5a3818;
+      font-size: 1rem;
+    }
+
+    .names span::after {
+      content: " ·";
+      color: #c2a96b;
+    }
+
+    .names span:last-child::after {
+      content: "";
+    }
+
+    /* Example queries */
+    .examples {
+      list-style: none;
+      margin-top: 0.8rem;
+    }
+
+    .examples li {
+      padding: 0.5rem 0;
+      padding-left: 1.4rem;
+      position: relative;
+      color: #3a2010;
+      font-style: italic;
+      border-bottom: 1px dotted #c2a96b44;
+      font-size: 0.98rem;
+    }
+
+    .examples li::before {
+      content: "⟶";
+      position: absolute;
+      left: 0;
+      color: #8b6820;
+      font-style: normal;
+    }
+
+    /* Stats strip */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      text-align: center;
+      padding: 1.6rem;
+      background: #ede0c0;
+      border: 1px solid #c2a96b55;
+      border-radius: 3px;
+      margin-bottom: 3rem;
+    }
+
+    .stat-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1a0e06;
+      display: block;
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      font-size: 0.82rem;
+      color: #7a5030;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      border-top: 1px solid #c2a96b44;
+      font-size: 0.85rem;
+      color: #7a5838;
+    }
+
+    footer a {
+      color: #8b6820;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .border-bottom-deco {
+      height: 6px;
+      background: linear-gradient(90deg, transparent, #8b6820, #c9a84c, #8b6820, transparent);
+    }
+  </style>
+</head>
+<body>
+
+<div class="border-top"></div>
+
+<header>
+  <span class="ornament">· · ✦ · ·</span>
+  <h1>Alexandria</h1>
+  <p class="subtitle">A library of classical philosophy — searchable by mind</p>
+</header>
+
+<main>
+
+  <div class="divider">— ✦ —</div>
+
+  <div class="stats">
+    <div>
+      <span class="stat-val">4.6 M</span>
+      <span class="stat-label">Text passages</span>
+    </div>
+    <div>
+      <span class="stat-val">20 000+</span>
+      <span class="stat-label">Books</span>
+    </div>
+    <div>
+      <span class="stat-val">7</span>
+      <span class="stat-label">Languages</span>
+    </div>
+    <div>
+      <span class="stat-val">Free</span>
+      <span class="stat-label">No key required</span>
+    </div>
+  </div>
+
+  <section>
+    <h2>What is Alexandria?</h2>
+    <p>
+      Alexandria is a semantic search engine over 4.6 million passages from the
+      great works of Western philosophy — public domain texts gathered from the
+      Internet Archive, spanning antiquity to the early twentieth century.
+    </p>
+    <p>
+      It is offered as an MCP server: connect it to any compatible AI assistant
+      and let the model retrieve primary sources directly while reasoning.
+      Queries work in any language; the texts are in their original tongues.
+    </p>
+  </section>
+
+  <section>
+    <h2>Connect to Claude</h2>
+    <div class="connect-box">
+      <p>Add Alexandria to Claude from the command line:</p>
+      <code class="code-line">claude mcp add --transport http alexandria https://alexandria.aidatanorge.no/mcp</code>
+      <p style="margin-top:0.8rem;">Or add manually in Settings → MCP Servers with transport <em>HTTP</em> and the URL above.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The Canon</h2>
+    <p>Search across the primary works of, among others:</p>
+    <div class="names">
+      <span>Aristotle</span><span>Plato</span><span>Socrates</span>
+      <span>Kant</span><span>Hegel</span><span>Nietzsche</span>
+      <span>Schopenhauer</span><span>Descartes</span><span>Spinoza</span>
+      <span>Leibniz</span><span>Locke</span><span>Hume</span>
+      <span>Rousseau</span><span>Voltaire</span><span>Mill</span>
+      <span>Aquinas</span><span>Augustine</span><span>Plotinus</span>
+      <span>Marcus Aurelius</span><span>Epictetus</span><span>Seneca</span>
+      <span>Cicero</span><span>Wittgenstein</span><span>Russell</span>
+      <span>James</span><span>Peirce</span><span>Bergson</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Example Queries</h2>
+    <ul class="examples">
+      <li>Nietzsche eternal recurrence and the will to power</li>
+      <li>Platonic theory of forms and participation in the Good</li>
+      <li>Kantian categorical imperative and the kingdom of ends</li>
+      <li>Aristotle on eudaimonia and the contemplative life</li>
+      <li>Stoic indifference to external goods — the sage</li>
+      <li>Hegel dialectic of master and slave</li>
+      <li>Free will, necessity, and compatibilism</li>
+    </ul>
+  </section>
+
+  <div class="divider">— ✦ —</div>
+
+</main>
+
+<footer>
+  <p>
+    Built by <a href="https://aidatanorge.no">AI Data Nordic</a> ·
+    <a href="https://github.com/AIDataNordic/Alexandria-mcp">GitHub</a> ·
+    Texts from <a href="https://archive.org">Internet Archive</a>
+  </p>
+</footer>
+
+<div class="border-bottom-deco"></div>
+
+</body>
+</html>
