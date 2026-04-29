@@ -1,3 +1,7 @@
+name: Alexandria Philosophy MCP
+description: Semantic search over 4.6 million classical philosophy and humanities texts from Archive.org — Aristotle, Plato, Kant, Nietzsche, Hegel and thousands more, in original languages with multilingual search.
+homepage: https://aidatanorge.no
+
 configSchema:
   type: object
   description: Optional configuration for the Alexandria MCP server

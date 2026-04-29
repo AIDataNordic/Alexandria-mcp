@@ -13,10 +13,12 @@ import os
 import logging
 import time
 import torch
+from typing import Annotated
 from fastmcp import FastMCP
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Prefetch, FusionQuery, Fusion, SparseVector,
+    Filter, FieldCondition, MatchText, MatchValue,
 )
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from fastembed import SparseTextEmbedding
@@ -55,7 +57,7 @@ mcp = FastMCP("alexandria-philosophy-mcp")
 
 
 @mcp.tool()
-async def ping(name: str = "world") -> str:
+async def ping(name: Annotated[str, "Name to greet"] = "world") -> str:
     """Simple connectivity test. Returns a greeting to confirm the server is running."""
     _log.info(f'ping name="{name}"')
     return f"Hello {name}! Alexandria MCP server is running with 4.6M+ philosophy texts."
@@ -63,9 +65,10 @@ async def ping(name: str = "world") -> str:
 
 @mcp.tool()
 async def search_texts(
-    query: str,
-    language: str = "",
-    limit: int = 5,
+    query: Annotated[str, "What you are looking for, e.g. 'Nietzsche will to power', 'Kantian categorical imperative', 'Platonic theory of forms', 'Stoic virtue and the sage'"],
+    author: Annotated[str, "Filter results to a specific author/creator, e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match."] = "",
+    language: Annotated[str, "Filter by language code: 'eng', 'ger', 'lat', 'fre', 'ita', 'gre', 'rus'"] = "",
+    limit: Annotated[int, "Number of results after reranking (default 5, max 20)"] = 5,
 ) -> list[dict]:
     """Search 4.6 million classical philosophy and humanities texts from Archive.org.
 
@@ -86,6 +89,8 @@ async def search_texts(
                   'Platonic theory of forms and the Good',
                   'Stoic virtue and the sage', 'Aristotle eudaimonia flourishing',
                   'Hegel dialectics spirit history', 'free will determinism compatibilism'
+        author:   Optional — filter results to a specific author/creator,
+                  e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match.
         language: Optional — filter by language code, e.g. 'eng', 'ger', 'lat',
                   'fre', 'ita', 'gre', 'rus'
         limit:    Number of results after reranking (default 5, max 20)
@@ -110,6 +115,8 @@ async def search_texts(
         values=sparse_result.values.tolist(),
     )
 
+    qfilter = Filter(must=[FieldCondition(key="creator", match=MatchText(text=author))]) if author else None
+
     fetch_limit = max(RERANK_FETCH, limit * 4)
     try:
         results = _qdrant.query_points(
@@ -119,6 +126,7 @@ async def search_texts(
                 Prefetch(query=sparse_vec, using="sparse", limit=fetch_limit),
             ],
             query=FusionQuery(fusion=Fusion.RRF),
+            query_filter=qfilter,
             limit=fetch_limit,
             with_payload=True,
         )
@@ -185,8 +193,83 @@ async def search_texts(
         })
 
     elapsed = round(time.time() - _t0, 3)
-    _log.info(f'search_texts query="{query}" language="{language}" results={len(output)} elapsed={elapsed}s')
+    _log.info(f'search_texts query="{query}" author="{author}" language="{language}" results={len(output)} elapsed={elapsed}s')
     return output
+
+
+@mcp.tool()
+async def get_book_list(
+    author: Annotated[str, "Filter by author/creator name, e.g. 'Kant', 'Nietzsche', 'Plato'. Case-insensitive substring match."] = "",
+    subject: Annotated[str, "Filter by subject keyword, e.g. 'ethics', 'logic', 'metaphysics'. Case-insensitive substring match."] = "",
+    language: Annotated[str, "Filter by language code: 'eng', 'ger', 'lat', 'fre', 'ita', 'gre', 'rus'"] = "",
+    limit: Annotated[int, "Maximum number of distinct books to return (default 20, max 100)"] = 20,
+) -> list[dict]:
+    """List books in the Alexandria collection, optionally filtered by author, subject or language.
+
+    Returns unique books (one entry per Archive.org identifier) with metadata.
+    At least one filter parameter is recommended — without filters, results are arbitrary.
+
+    Args:
+        author:   Filter by author/creator name, e.g. 'Kant', 'Nietzsche', 'Plato'.
+                  Case-insensitive substring match against the creator field.
+        subject:  Filter by subject keyword, e.g. 'ethics', 'logic', 'metaphysics'.
+                  Case-insensitive substring match against the subject field.
+        language: Filter by language code, e.g. 'eng', 'ger', 'lat', 'fre', 'gre', 'rus'.
+        limit:    Maximum number of distinct books to return (default 20, max 100).
+
+    Returns:
+        List of books with title, creator, date, language, subject, identifier and total_chunks.
+    """
+    limit = min(limit, 100)
+
+    conditions = []
+    if author:
+        conditions.append(FieldCondition(key="creator", match=MatchText(text=author)))
+    if subject:
+        conditions.append(FieldCondition(key="subject", match=MatchText(text=subject)))
+    if language:
+        conditions.append(FieldCondition(key="language", match=MatchValue(value=language)))
+
+    qfilter = Filter(must=conditions) if conditions else None
+
+    seen: set[str] = set()
+    books: list[dict] = []
+    offset = None
+
+    while len(books) < limit:
+        batch, offset = _qdrant.scroll(
+            collection_name=COLLECTION_NAME,
+            scroll_filter=qfilter,
+            limit=200,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for point in batch:
+            identifier = point.payload.get("identifier")
+            if not identifier or identifier in seen:
+                continue
+            seen.add(identifier)
+            p = point.payload
+            subj = p.get("subject", "")
+            if isinstance(subj, list):
+                subj = ", ".join(subj[:3])
+            books.append({
+                "title":        p.get("title"),
+                "creator":      p.get("creator"),
+                "date":         p.get("date", "")[:4] if p.get("date") else None,
+                "language":     p.get("language"),
+                "subject":      subj,
+                "identifier":   identifier,
+                "total_chunks": p.get("total_chunks"),
+            })
+            if len(books) >= limit:
+                break
+        if offset is None:
+            break
+
+    _log.info(f'get_book_list author="{author}" subject="{subject}" language="{language}" results={len(books)}')
+    return books
 
 
 @mcp.prompt()
