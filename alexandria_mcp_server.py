@@ -54,10 +54,7 @@ _fh = logging.FileHandler(os.path.expanduser("~/logs/alexandria_mcp_server.log")
 _fh.setFormatter(logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S"))
 _log.addHandler(_fh)
 
-mcp = FastMCP(
-    "alexandria-philosophy-mcp",
-    description="Semantic search over 4.6 million classical philosophy and humanities texts from Archive.org — Aristotle, Plato, Kant, Nietzsche, Hegel and thousands more, in original languages with multilingual search.",
-)
+mcp = FastMCP("alexandria-philosophy-mcp")
 
 
 @mcp.tool(annotations=ToolAnnotations(readOnlyHint=True))
