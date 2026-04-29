@@ -15,6 +15,7 @@ import time
 import torch
 from typing import Annotated
 from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Prefetch, FusionQuery, Fusion, SparseVector,
@@ -53,17 +54,20 @@ _fh = logging.FileHandler(os.path.expanduser("~/logs/alexandria_mcp_server.log")
 _fh.setFormatter(logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S"))
 _log.addHandler(_fh)
 
-mcp = FastMCP("alexandria-philosophy-mcp")
+mcp = FastMCP(
+    "alexandria-philosophy-mcp",
+    description="Semantic search over 4.6 million classical philosophy and humanities texts from Archive.org — Aristotle, Plato, Kant, Nietzsche, Hegel and thousands more, in original languages with multilingual search.",
+)
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True))
 async def ping(name: Annotated[str, "Name to greet"] = "world") -> str:
     """Simple connectivity test. Returns a greeting to confirm the server is running."""
     _log.info(f'ping name="{name}"')
     return f"Hello {name}! Alexandria MCP server is running with 4.6M+ philosophy texts."
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True))
 async def search_texts(
     query: Annotated[str, "What you are looking for, e.g. 'Nietzsche will to power', 'Kantian categorical imperative', 'Platonic theory of forms', 'Stoic virtue and the sage'"],
     author: Annotated[str, "Filter results to a specific author/creator, e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match."] = "",
@@ -197,7 +201,7 @@ async def search_texts(
     return output
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 async def get_book_list(
     author: Annotated[str, "Filter by author/creator name, e.g. 'Kant', 'Nietzsche', 'Plato'. Case-insensitive substring match."] = "",
     subject: Annotated[str, "Filter by subject keyword, e.g. 'ethics', 'logic', 'metaphysics'. Case-insensitive substring match."] = "",

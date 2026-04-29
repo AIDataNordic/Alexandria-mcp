@@ -20,8 +20,6 @@ configSchema:
   required: []
   additionalProperties: false
 
-homepage: https://aidatanorge.no
-
 startCommand:
   type: http
   url: https://alexandria.aidatanorge.no/mcp
