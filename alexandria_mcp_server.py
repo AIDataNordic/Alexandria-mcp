@@ -31,20 +31,25 @@ QDRANT_PORT     = int(os.getenv("QDRANT_PORT", "6333"))
 RERANK_FETCH    = 40
 RERANK_MODEL    = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 
-print("Loading embedding model...")
-_model = SentenceTransformer("intfloat/multilingual-e5-large", device="cpu")
-_model.max_seq_length = 512
-print("Embedding model loaded.")
+_model = None
+_sparse_model = None
+_reranker = None
+_qdrant = None
 
-print("Loading sparse model...")
-_sparse_model = SparseTextEmbedding("Qdrant/bm25")
-print("Sparse model loaded.")
 
-print("Loading reranker...")
-_reranker = CrossEncoder(RERANK_MODEL, device="cpu")
-print("Reranker loaded.")
-
-_qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+def _get_models():
+    global _model, _sparse_model, _reranker, _qdrant
+    if _model is None:
+        print("Loading embedding model...")
+        _model = SentenceTransformer("intfloat/multilingual-e5-large", device="cpu")
+        _model.max_seq_length = 512
+        print("Loading sparse model...")
+        _sparse_model = SparseTextEmbedding("Qdrant/bm25")
+        print("Loading reranker...")
+        _reranker = CrossEncoder(RERANK_MODEL, device="cpu")
+        _qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        print("Models loaded.")
+    return _model, _sparse_model, _reranker, _qdrant
 
 # --- Logging ---
 _log = logging.getLogger("alexandria_mcp")
@@ -116,13 +121,15 @@ async def search_texts(
     limit = min(limit, 20)
     _t0 = time.time()
 
+    model, sparse_model, reranker, qdrant = _get_models()
+
     # multilingual-e5-large uses "query:" prefix at search time
     e5_query = f"query: {query}"
 
     with torch.no_grad():
-        dense_vec = _model.encode(e5_query, normalize_embeddings=True).tolist()
+        dense_vec = model.encode(e5_query, normalize_embeddings=True).tolist()
 
-    sparse_result = list(_sparse_model.embed([query]))[0]
+    sparse_result = list(sparse_model.embed([query]))[0]
     sparse_vec = SparseVector(
         indices=sparse_result.indices.tolist(),
         values=sparse_result.values.tolist(),
@@ -132,7 +139,7 @@ async def search_texts(
 
     fetch_limit = max(RERANK_FETCH, limit * 4)
     try:
-        results = _qdrant.query_points(
+        results = qdrant.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
                 Prefetch(query=dense_vec,  using="dense",  limit=fetch_limit),
@@ -165,7 +172,7 @@ async def search_texts(
 
     pairs = [(query, p.payload.get("text", "")) for p in candidates]
     with torch.no_grad():
-        rerank_scores = _reranker.predict(pairs)
+        rerank_scores = reranker.predict(pairs)
 
     r_scores = [float(s) for s in rerank_scores]
     v_scores = [p.score for p in candidates]
@@ -235,6 +242,8 @@ async def get_book_list(
     """
     limit = min(limit, 100)
 
+    _, _, _, qdrant = _get_models()
+
     conditions = []
     if author:
         conditions.append(FieldCondition(key="creator", match=MatchText(text=author)))
@@ -250,7 +259,7 @@ async def get_book_list(
     offset = None
 
     while len(books) < limit:
-        batch, offset = _qdrant.scroll(
+        batch, offset = qdrant.scroll(
             collection_name=COLLECTION_NAME,
             scroll_filter=qfilter,
             limit=200,
