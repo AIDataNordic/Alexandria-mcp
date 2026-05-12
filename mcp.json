@@ -1,0 +1,43 @@
+{
+  "name": "io.github.AIDataNordic/alexandria-mcp",
+  "version": "1.0.0",
+  "description": "Semantic search over 4.6 million text chunks from 20,000+ classical philosophy and humanities works — Plato, Aristotle, Kant, Nietzsche, Hegel, Hume and thousands more — sourced from Archive.org.",
+  "vendor": {
+    "name": "AIDataNordic",
+    "url": "https://github.com/AIDataNordic"
+  },
+  "transport": {
+    "type": "streamable-http",
+    "endpoint": "https://alexandria.aidatanorge.no/mcp"
+  },
+  "tools": [
+    {
+      "name": "search_texts",
+      "description": "Semantic search over 4.6 million classical philosophy and humanities texts. Supports filtering by author, language and topic with hybrid dense+sparse retrieval and cross-encoder reranking."
+    },
+    {
+      "name": "get_book_list",
+      "description": "List books in the Alexandria collection, optionally filtered by author, subject or language."
+    },
+    {
+      "name": "ping",
+      "description": "Simple connectivity test. Returns a greeting to confirm the server is running."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "philosopher_analysis",
+      "description": "Generate a prompt for deep analysis of a philosopher's key ideas using primary sources."
+    },
+    {
+      "name": "topic_exploration",
+      "description": "Generate a prompt for exploring a philosophical topic across multiple thinkers and traditions."
+    },
+    {
+      "name": "compare_philosophers",
+      "description": "Generate a prompt for comparing two philosophers on a specific topic."
+    }
+  ],
+  "categories": ["knowledge", "research", "education"],
+  "keywords": ["philosophy", "classical-texts", "semantic-search", "humanities", "plato", "aristotle", "kant", "nietzsche", "archive-org", "rag", "qdrant"]
+}
