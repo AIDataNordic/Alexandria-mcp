@@ -339,18 +339,22 @@ class AcceptPatchMiddleware:
 
 
 if __name__ == "__main__":
-    from starlette.middleware import Middleware
-    from starlette.middleware.cors import CORSMiddleware
+    _transport = os.getenv("MCP_TRANSPORT", "http")
+    if _transport == "stdio":
+        mcp.run(transport="stdio")
+    else:
+        from starlette.middleware import Middleware
+        from starlette.middleware.cors import CORSMiddleware
 
-    port = int(os.getenv("MCP_PORT", 8005))
-    print(f"→ Starting Alexandria MCP server at http://0.0.0.0:{port}/mcp")
-    mcp.run(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=port,
-        stateless_http=True,
-        middleware=[
-            Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]),
-            Middleware(AcceptPatchMiddleware),
-        ],
-    )
+        port = int(os.getenv("MCP_PORT", 8005))
+        print(f"→ Starting Alexandria MCP server at http://0.0.0.0:{port}/mcp")
+        mcp.run(
+            transport="streamable-http",
+            host="0.0.0.0",
+            port=port,
+            stateless_http=True,
+            middleware=[
+                Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]),
+                Middleware(AcceptPatchMiddleware),
+            ],
+        )
