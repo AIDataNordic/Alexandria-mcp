@@ -1,6 +1,34 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "maintainers": [
-    "AIDataNordic"
-  ]
+  "name": "Alexandria Philosophy MCP",
+  "description": "Semantic search over 4.6 million text chunks from 20,000+ classical philosophy and humanities works — Plato, Aristotle, Kant, Nietzsche, Hegel, Hume and thousands more — sourced from Archive.org. Supports author, language and topic filtering with hybrid dense+sparse retrieval and cross-encoder reranking.",
+  "maintainers": ["AIDataNordic"],
+  "categories": ["knowledge", "research", "education"],
+  "tags": ["philosophy", "classical-texts", "semantic-search", "humanities", "plato", "aristotle", "kant", "nietzsche", "archive-org", "rag", "qdrant"],
+  "examples": [
+    {
+      "title": "Search Nietzsche",
+      "description": "Find passages on the will to power and eternal recurrence",
+      "command": "search_texts query=\"Nietzsche will to power eternal recurrence\" author=\"Nietzsche\""
+    },
+    {
+      "title": "Kantian ethics",
+      "description": "Find passages on the categorical imperative",
+      "command": "search_texts query=\"categorical imperative duty ethics\" author=\"Kant\""
+    },
+    {
+      "title": "Browse Plato's works",
+      "description": "List books by Plato in the collection",
+      "command": "get_book_list author=\"Plato\""
+    },
+    {
+      "title": "Stoic philosophy in Latin",
+      "description": "Find Stoic texts in their original Latin",
+      "command": "search_texts query=\"Stoic virtue sage\" language=\"lat\""
+    }
+  ],
+  "transport": {
+    "type": "streamable-http",
+    "url": "https://alexandria.aidatanorge.no/mcp"
+  }
 }
