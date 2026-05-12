@@ -37,6 +37,7 @@ Search the collection using natural language. Uses hybrid dense+sparse retrieval
 | Parameter | Type | Description |
 |---|---|---|
 | `query` | string | What you are looking for |
+| `author` | string | Optional filter by author/creator, e.g. `Kant`, `Nietzsche`, `Plato` |
 | `language` | string | Optional language filter: `eng`, `ger`, `lat`, `fre`, `ita`, `gre`, `rus` |
 | `limit` | int | Number of results (default 5, max 20) |
 

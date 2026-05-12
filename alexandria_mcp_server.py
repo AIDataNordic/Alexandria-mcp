@@ -54,7 +54,19 @@ _fh = logging.FileHandler(os.path.expanduser("~/logs/alexandria_mcp_server.log")
 _fh.setFormatter(logging.Formatter("%(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S"))
 _log.addHandler(_fh)
 
-mcp = FastMCP("alexandria-philosophy-mcp")
+mcp = FastMCP(
+    "alexandria-philosophy-mcp",
+    instructions=(
+        "Alexandria gives AI agents semantic search over 4.6 million text chunks from "
+        "20,000+ classical philosophy and humanities works — Plato, Aristotle, Kant, Nietzsche, "
+        "Hegel, Hume, Descartes, Schopenhauer, and thousands more — sourced from Archive.org. "
+        "Texts span Ancient Greek, Latin, German, French, English, Italian and other languages. "
+        "Use search_texts to find passages by concept, argument or author. "
+        "Use get_book_list to browse available works. "
+        "Three prompts are available for guided analysis: philosopher_analysis, "
+        "topic_exploration, and compare_philosophers."
+    ),
+)
 
 
 @mcp.tool(annotations=ToolAnnotations(readOnlyHint=True))
