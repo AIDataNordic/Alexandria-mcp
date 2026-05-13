@@ -28,7 +28,7 @@
     }
   ],
   "transport": {
-    "type": "streamable-http",
+    "type": "http",
     "url": "https://alexandria.aidatanorge.no/mcp"
   }
 }
