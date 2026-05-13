@@ -50,6 +50,52 @@ Search the collection using natural language. Uses hybrid dense+sparse retrieval
 
 Each result includes: `title`, `creator`, `date`, `language`, `subject`, `text` (chunk), `rerank_score`, `vector_score`.
 
+**curl example:**
+```bash
+curl -X POST https://alexandria.aidatanorge.no/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "search_texts",
+      "arguments": {
+        "query": "Kantian categorical imperative duty ethics",
+        "author": "Kant",
+        "limit": 3
+      }
+    }
+  }'
+```
+
+### `get_book_list`
+List books in the collection filtered by author, subject or language.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `author` | string | Filter by author/creator, e.g. `Kant`, `Plato` |
+| `subject` | string | Filter by subject keyword, e.g. `ethics`, `logic` |
+| `language` | string | Filter by language code: `eng`, `ger`, `lat`, `fre`, `ita`, `gre`, `rus` |
+| `limit` | int | Max books to return (default 20, max 100) |
+
+**curl example:**
+```bash
+curl -X POST https://alexandria.aidatanorge.no/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "get_book_list",
+      "arguments": {"author": "Plato", "language": "eng"}
+    }
+  }'
+```
+
 ### `ping`
 Connectivity test.
 
