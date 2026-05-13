@@ -86,6 +86,8 @@ async def search_texts(
     query: Annotated[str, "What you are looking for, e.g. 'Nietzsche will to power', 'Kantian categorical imperative', 'Platonic theory of forms', 'Stoic virtue and the sage'"],
     author: Annotated[str, "Filter results to a specific author/creator, e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match."] = "",
     language: Annotated[str, "Filter by language code: 'eng', 'ger', 'lat', 'fre', 'ita', 'gre', 'rus'"] = "",
+    date_from: Annotated[int, "Filter to texts published from this year onwards, e.g. 1800"] = 0,
+    date_to: Annotated[int, "Filter to texts published up to this year, e.g. 1900"] = 0,
     limit: Annotated[int, "Number of results after reranking (default 5, max 20)"] = 5,
 ) -> list[dict]:
     """Search 4.6 million classical philosophy and humanities texts from Archive.org.
@@ -102,16 +104,18 @@ async def search_texts(
     Italian, Greek, Russian. Queries in any language work due to multilingual embeddings.
 
     Args:
-        query:    What you are looking for, e.g. 'Nietzsche will to power eternal recurrence',
-                  'Kantian categorical imperative duty ethics',
-                  'Platonic theory of forms and the Good',
-                  'Stoic virtue and the sage', 'Aristotle eudaimonia flourishing',
-                  'Hegel dialectics spirit history', 'free will determinism compatibilism'
-        author:   Optional — filter results to a specific author/creator,
-                  e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match.
-        language: Optional — filter by language code, e.g. 'eng', 'ger', 'lat',
-                  'fre', 'ita', 'gre', 'rus'
-        limit:    Number of results after reranking (default 5, max 20)
+        query:     What you are looking for, e.g. 'Nietzsche will to power eternal recurrence',
+                   'Kantian categorical imperative duty ethics',
+                   'Platonic theory of forms and the Good',
+                   'Stoic virtue and the sage', 'Aristotle eudaimonia flourishing',
+                   'Hegel dialectics spirit history', 'free will determinism compatibilism'
+        author:    Optional — filter results to a specific author/creator,
+                   e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match.
+        language:  Optional — filter by language code, e.g. 'eng', 'ger', 'lat',
+                   'fre', 'ita', 'gre', 'rus'
+        date_from: Optional — only include texts from this year onwards, e.g. 1800
+        date_to:   Optional — only include texts up to this year, e.g. 1900
+        limit:     Number of results after reranking (default 5, max 20)
 
     Returns:
         List of relevant text excerpts with metadata, reranked by relevance.
@@ -170,6 +174,18 @@ async def search_texts(
         if not candidates:
             candidates = results.points  # fall back if filter yields nothing
 
+    # Filter by date range if specified
+    if date_from or date_to:
+        def _year(p) -> int:
+            d = p.payload.get("date", "") or ""
+            try:
+                return int(str(d)[:4])
+            except ValueError:
+                return 0
+        filtered = [p for p in candidates if (not date_from or _year(p) >= date_from) and (not date_to or _year(p) <= date_to)]
+        if filtered:
+            candidates = filtered
+
     pairs = [(query, p.payload.get("text", "")) for p in candidates]
     with torch.no_grad():
         rerank_scores = reranker.predict(pairs)
@@ -223,10 +239,11 @@ async def get_book_list(
     subject: Annotated[str, "Filter by subject keyword, e.g. 'ethics', 'logic', 'metaphysics'. Case-insensitive substring match."] = "",
     language: Annotated[str, "Filter by language code: 'eng', 'ger', 'lat', 'fre', 'ita', 'gre', 'rus'"] = "",
     limit: Annotated[int, "Maximum number of distinct books to return (default 20, max 100)"] = 20,
-) -> list[dict]:
+) -> dict:
     """List books in the Alexandria collection, optionally filtered by author, subject or language.
 
-    Returns unique books (one entry per Archive.org identifier) with metadata.
+    Returns unique books (one entry per Archive.org identifier) with metadata,
+    plus the total number of matching books in the collection.
     At least one filter parameter is recommended — without filters, results are arbitrary.
 
     Args:
@@ -238,7 +255,8 @@ async def get_book_list(
         limit:    Maximum number of distinct books to return (default 20, max 100).
 
     Returns:
-        List of books with title, creator, date, language, subject, identifier and total_chunks.
+        Dict with 'books' (list of matching books with metadata) and 'total_chunks_matched'
+        (total number of matching text chunks in the collection, useful for pagination planning).
     """
     limit = min(limit, 100)
 
@@ -290,8 +308,9 @@ async def get_book_list(
         if offset is None:
             break
 
-    _log.info(f'get_book_list author="{author}" subject="{subject}" language="{language}" results={len(books)}')
-    return books
+    total = qdrant.count(collection_name=COLLECTION_NAME, count_filter=qfilter, exact=False).count
+    _log.info(f'get_book_list author="{author}" subject="{subject}" language="{language}" results={len(books)} total={total}')
+    return {"books": books, "total_chunks_matched": total}
 
 
 @mcp.prompt()
