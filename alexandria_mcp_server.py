@@ -19,7 +19,7 @@ from mcp.types import ToolAnnotations
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Prefetch, FusionQuery, Fusion, SparseVector,
-    Filter, FieldCondition, MatchText, MatchValue,
+    Filter, FieldCondition, MatchText, MatchValue, SearchParams,
 )
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from fastembed import SparseTextEmbedding
@@ -28,7 +28,7 @@ from fastembed import SparseTextEmbedding
 COLLECTION_NAME = "alexandria"
 QDRANT_HOST     = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT     = int(os.getenv("QDRANT_PORT", "6333"))
-RERANK_FETCH    = 40
+RERANK_FETCH    = 20
 RERANK_MODEL    = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 
 _model = None
@@ -47,7 +47,7 @@ def _get_models():
         _sparse_model = SparseTextEmbedding("Qdrant/bm25")
         print("Loading reranker...")
         _reranker = CrossEncoder(RERANK_MODEL, device="cpu")
-        _qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        _qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=60)
         print("Models loaded.")
     return _model, _sparse_model, _reranker, _qdrant
 
@@ -86,8 +86,8 @@ async def search_texts(
     query: Annotated[str, "What you are looking for, e.g. 'Nietzsche will to power', 'Kantian categorical imperative', 'Platonic theory of forms', 'Stoic virtue and the sage'"],
     author: Annotated[str, "Filter results to a specific author/creator, e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match."] = "",
     language: Annotated[str, "Filter by language code: 'eng', 'ger', 'lat', 'fre', 'ita', 'gre', 'rus'"] = "",
-    date_from: Annotated[int, "Filter to texts published from this year onwards, e.g. 1800"] = 0,
-    date_to: Annotated[int, "Filter to texts published up to this year, e.g. 1900"] = 0,
+    date_from: Annotated[int, "Filter by Archive.org digitization/publication year (NOT the philosopher's era). e.g. 1850 to exclude very early scans. Most texts were digitized 1900–1927."] = 0,
+    date_to: Annotated[int, "Filter by Archive.org digitization/publication year (NOT the philosopher's era). Ancient texts (Plato, Aristotle) were digitized ~1900 and will be excluded by date_to < 1900."] = 0,
     limit: Annotated[int, "Number of results after reranking (default 5, max 20)"] = 5,
 ) -> list[dict]:
     """Search 4.6 million classical philosophy and humanities texts from Archive.org.
@@ -113,8 +113,11 @@ async def search_texts(
                    e.g. 'Kant', 'Nietzsche', 'Aristotle'. Case-insensitive substring match.
         language:  Optional — filter by language code, e.g. 'eng', 'ger', 'lat',
                    'fre', 'ita', 'gre', 'rus'
-        date_from: Optional — only include texts from this year onwards, e.g. 1800
-        date_to:   Optional — only include texts up to this year, e.g. 1900
+        date_from: Optional — filter by Archive.org digitization year, not philosophical era.
+                   Use to exclude very early or very late scans, e.g. date_from=1850.
+                   WARNING: ancient texts (Plato, Aristotle, Stoics) were digitized ~1900–1920
+                   and will be EXCLUDED by date_to < 1900. Use author= to filter by philosopher instead.
+        date_to:   Optional — upper bound on digitization year, e.g. date_to=1910.
         limit:     Number of results after reranking (default 5, max 20)
 
     Returns:
@@ -143,10 +146,11 @@ async def search_texts(
 
     fetch_limit = max(RERANK_FETCH, limit * 4)
     try:
+        _params = SearchParams(hnsw_ef=64, exact=False)
         results = qdrant.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
-                Prefetch(query=dense_vec,  using="dense",  limit=fetch_limit),
+                Prefetch(query=dense_vec,  using="dense",  limit=fetch_limit, params=_params),
                 Prefetch(query=sparse_vec, using="sparse", limit=fetch_limit),
             ],
             query=FusionQuery(fusion=Fusion.RRF),
@@ -376,6 +380,9 @@ if __name__ == "__main__":
 
         port = int(os.getenv("MCP_PORT", 8005))
         print(f"→ Starting Alexandria MCP server at http://0.0.0.0:{port}/mcp")
+        print("Pre-loading models...")
+        _get_models()
+        print("Models ready.")
         mcp.run(
             transport="streamable-http",
             host="0.0.0.0",
