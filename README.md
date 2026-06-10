@@ -1,5 +1,7 @@
 # Alexandria MCP Server
 
+[![Available on CodeGuilds](https://img.shields.io/badge/Available_on-CodeGuilds-6366f1)](https://codeguilds.dev/packages/alexandria-mcp)
+
 Semantic search over **4.6 million text chunks** from 20,000+ classical philosophy and humanities works. Built for AI agents using [FastMCP](https://github.com/jlowin/fastmcp) over HTTP.
 
 ## What's in the collection
